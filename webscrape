@@ -19,6 +19,7 @@ print len(subjectlist)
 # br=mechanize.Browser()
 # br.open(URL)
 for i in range(len(subjectlist)):
+  try:
     br.select_form(nr=0)
     br.form["subject"]=subjectlist[i]
     response = br.submit()
@@ -42,12 +43,33 @@ for i in range(len(subjectlist)):
             a=' '.join(c.split())
             print a
         print "*****************************************************"
-
-
-
-
-
     time.sleep(1)
+  except:
+      time.sleep(400)
+      br.select_form(nr=0)
+      br.form["subject"] = subjectlist[i]
+      response = br.submit()
+      page = response.read()
+      soup = BeautifulSoup(page, 'html.parser')
+      # print soup.get_text()
+      # print soup.prettify()
+      print i
+      courselist = soup.find_all(class_="table table-striped")
+      for i in range(len(courselist)):
+          subsoup = BeautifulSoup(str(courselist[i]), 'html.parser')
+          coursename = subsoup.find("h4")
+          coursename = coursename.get_text()
+          print coursename
+          tbody = subsoup.find("tbody")
+          content = tbody.contents[1]
+          objects = content.contents
+          for i in range(1, len(objects) - 1, 2):
+              print "\n"
+              c = objects[i].get_text()
+              a = ' '.join(c.split())
+              print a
+          print "*****************************************************"
+      time.sleep(1)
 stop=timeit.default_timer()
 print stop-start
 
