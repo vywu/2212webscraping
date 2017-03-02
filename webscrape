@@ -2,6 +2,12 @@ import timeit
 import mechanize
 import time
 from bs4 import BeautifulSoup
+import sys
+from datetime import datetime
+f1=open("1.txt","w")
+f2=open("2.txt","w")
+f3=open("3.txt","w")
+f4=open("4.txt","w")
 start=timeit.default_timer()
 URL='http://studentservices.uwo.ca/secure/timetables/mastertt/ttindex.cfm'
 br=mechanize.Browser()
@@ -12,8 +18,11 @@ subjectlist=[]
 for item in control.items:
     cur=[]
     if item.name!='':
-        cur.append(item.name)
-        subjectlist.append(cur)
+        if("MTP" in item.name):
+            print("!!!!!!!!")
+        else:
+            cur.append(item.name)
+            subjectlist.append(cur)
 
 print "Total number of courses:"
 print len(subjectlist)
@@ -24,24 +33,74 @@ for i in range(len(subjectlist)):
     br.select_form(nr=0)
     br.form["subject"]=subjectlist[i]
     response = br.submit()
-    page=response.read()
+    page=response.read().decode('utf-8','ignore')
     soup=BeautifulSoup(page,'html.parser')
-    print i+1
     courselist=soup.find_all(class_="table table-striped")
     for j in range(len(courselist)):
         subsoup=BeautifulSoup(str(courselist[j]),'html.parser')
         coursename=subsoup.find("h4")
         coursename=coursename.get_text()
         print coursename
-        tbody=subsoup.find("tbody")
-        content=tbody.contents[1]
-        objects=content.contents
-        for k in range(1,len(objects)-1,2):
-            print "\n"
-            c=objects[k].get_text()
-            info=' '.join(c.split())
-            print info
-        print "*****************************************************"
+        if ("Fanshawe" in coursename):
+            print("???????")
+        else:
+            tbody=subsoup.find("tbody")
+            for m in range(1,len(tbody.contents),2):
+                content=tbody.contents[m]
+                objects=content.contents
+                # write to file1
+                temp=objects[5].get_text(strip=True)
+                coursenum=' '.join(temp.split())
+                temp=coursename
+                temp=temp.split("-")
+                courseid=temp[0]
+                courseName=temp[1].lstrip()
+                temp=objects[3].get_text()
+                coursetype=' '.join(temp.split())
+                f1.write(coursenum+"\t"+coursename+"\t"+coursetype+"\n")
+                # write to file2
+                f2.write(coursenum+"\t"+courseName+"\n")
+                # write to file3
+                temp=objects[7].get_text()
+                temp=' '.join(temp.split())
+                temp=temp.split(" ")
+                if (len(temp)>1):
+                    day=temp
+                    timetemp = objects[9].get_text()
+                    startime = ' '.join(timetemp.split())
+                    timetemp = objects[11].get_text()
+                    endtime = ' '.join(timetemp.split())
+                    endtime=endtime.lstrip()
+                    for d in range(len(temp)):
+                        f3.write(coursenum + "\t" + day[d] + "\t" + startime + "\t" + endtime + "\n")
+
+                else:
+                    if(len(temp)==1):
+                        day=temp[0]
+                        timetemp=objects[9].get_text()
+                        startime=' '.join(timetemp.split())
+                        timetemp = objects[11].get_text()
+                        endtime=' '.join(timetemp.split())
+                        f3.write(coursenum+"\t"+day+"\t"+startime+"\t"+endtime+"\n")
+
+
+                # write to file4
+                ##temp:instructor
+                temp=objects[15].get_text(strip=True)
+                if temp!="":
+                    instructor=' '.join(temp.split())
+                    f4.write(coursenum+"\t"+instructor+"\n")
+
+                # for k in range(1,len(objects)-1,2):
+                #     c=objects[k].get_text()
+                #     info=' '.join(c.split())
+                #     if k==5:
+                #         f1.write(info+"\t")
+                #         f1.write(coursename+"\t")
+
+
+
+
     if ((i+1)%5==0):#stop for 60 seconds every five subjects to avoid the   activation of captcha
         time.sleep(60)
 stop=timeit.default_timer()
